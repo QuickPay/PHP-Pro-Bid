@@ -1,0 +1,267 @@
+<?php
+
+/**
+ *
+ * PHP Pro Bid
+ *
+ * @link        http://www.phpprobid.com
+ * @copyright   Copyright (c) 2014 Online Ventures Software LTD & CodeCube SRL
+ * @license     http://www.phpprobid.com/license Commercial License
+ *
+ * @version     7.2
+ */
+
+/**
+ * QuickPay payment gateway model class
+ *
+ * https://learn.quickpay.net/tech-talk/payments/form/
+ *
+ * https://learn.quickpay.net/tech-talk/api/callback/#callback
+ *
+ * https://manage.quickpay.net/account/116982/settings/integration
+ */
+
+namespace Ppb\Model\PaymentGateway;
+
+use Cube\Controller\Request\AbstractRequest;
+
+class QuickPay extends AbstractPaymentGateway
+{
+    /**
+     * payment gateway name
+     */
+
+    const NAME = 'QuickPay';
+
+    /**
+     * required settings
+     */
+    const MERCHANT_ID = 'QuickPayMerchantID';
+    const MERCHANT_PRIVATE_KEY = 'QuickPayMerchantPrivateKey';
+    const AGREEMENT_ID = 'QuickPayAgreementID';
+    const AGREEMENT_API_KEY = 'QuickPayAgreementApiKey';
+
+    /**
+     * form post url
+     */
+    const POST_URL = 'https://payment.quickpay.net';
+
+    /**
+     *
+     * accepted currencies
+     * first currency in array will be the default currency
+     *
+     * @var array
+     */
+    protected $_acceptedCurrencies = array('DKK');
+
+    /**
+     * sagepay description
+     */
+    protected $_description = 'Click to pay through QuickPay.';
+
+    public function __construct($userId = null)
+    {
+        parent::__construct(self::NAME, $userId);
+    }
+
+    /**
+     *
+     * check if the gateway is enabled
+     *
+     * @return bool
+     */
+    public function enabled()
+    {
+        if (!empty($this->_data[self::MERCHANT_ID]) && !empty($this->_data[self::AGREEMENT_ID])) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     *
+     * get setup form elements
+     *
+     * @return array
+     */
+    public function getElements()
+    {
+        $translate = $this->getTranslate();
+
+        return array(
+            array(
+                'form_id'     => 'QuickPay',
+                'id'          => self::MERCHANT_ID,
+                'element'     => 'text',
+                'label'       => $this->_('QuickPay Merchant ID'),
+                'description' => $this->_('Enter your QuickPay merchant account id.'),
+                'attributes'  => array(
+                    'class' => 'form-control input-medium',
+                ),
+            ),
+            array(
+                'form_id'     => 'QuickPay',
+                'id'          => self::MERCHANT_PRIVATE_KEY,
+                'element'     => 'text',
+                'label'       => $this->_('QuickPay Merchant Private Key'),
+                'description' => $this->_('Enter the Merchant private key corresponding to your merchant account id.'),
+                'attributes'  => array(
+                    'class' => 'form-control input-medium',
+                ),
+            ),
+            array(
+                'form_id'     => 'QuickPay',
+                'id'          => self::AGREEMENT_ID,
+                'element'     => 'text',
+                'label'       => $this->_('QuickPay Agreement ID'),
+                'description' => $this->_('Enter your payment window user agreement id.'),
+                'attributes'  => array(
+                    'class' => 'form-control input-medium',
+                ),
+            ),
+            array(
+                'form_id'     => 'QuickPay',
+                'id'          => self::AGREEMENT_API_KEY,
+                'element'     => 'text',
+                'label'       => $this->_('QuickPay Agreement API Key'),
+                'description' => $this->_('Enter the API-key belonging to the agreement id entered above.'),
+                'attributes'  => array(
+                    'class' => 'form-control input-medium',
+                ),
+            ),
+        );
+    }
+
+    public function formElements()
+    {
+        $user = $this->getUser();
+
+        /*
+<!--
+TIP: Append "/framed" to the action URL if you want to show the payment window in an iframe:
+<form method="POST" action="https://payment.quickpay.net/framed">
+-->
+<form method="POST" action="https://payment.quickpay.net">
+  <input type="hidden" name="version" value="v10">
+  <input type="hidden" name="merchant_id" value="1">
+  <input type="hidden" name="agreement_id" value="1">
+  <input type="hidden" name="order_id" value="0001">
+  <input type="hidden" name="amount" value="100">
+  <input type="hidden" name="currency" value="DKK">
+  <input type="hidden" name="continueurl" value="http://shop.domain.tld/continue">
+  <input type="hidden" name="cancelurl" value="http://shop.domain.tld/cancel">
+  <input type="hidden" name="callbackurl" value="http://shop.domain.tld/callback">
+  <input type="hidden" name="checksum" value="ed93f788f699c42aefa8a6713794b4d347ff493ecce1aca660581fb1511a1816">
+  <input type="submit" value="Continue to payment...">
+</form>
+
+        */
+
+        $params = array(
+            "version"      => "v10",
+            "merchant_id"  => $this->_data[self::MERCHANT_ID],
+            "agreement_id" => $this->_data[self::AGREEMENT_ID],
+            "order_id"     => $this->getTransactionId(),
+            "amount"       => $this->getAmount() * 100,
+            "currency"     => $this->getCurrency(),
+            "continueurl"  => $this->getSuccessUrl(),
+            "cancelurl"    => $this->getFailureUrl(),
+            "callbackurl"  => $this->getIpnUrl(),
+            'description'  => $this->getName(),
+        );
+
+        $params["checksum"] = $this->_sign($params, $this->_data[self::AGREEMENT_API_KEY]);
+
+        $array = array();
+
+        foreach ($params as $key => $value) {
+            array_push($array, array(
+                'id'      => $key,
+                'value'   => $value,
+                'element' => 'hidden',
+            ));
+        }
+
+        return $array;
+    }
+
+    public function getPostUrl()
+    {
+        return self::POST_URL;
+    }
+
+    /**
+     *
+     * process ipn
+     *
+     * @param \Cube\Controller\Request\AbstractRequest $request
+     *
+     * @return bool
+     */
+    public function processIpn(AbstractRequest $request)
+    {
+        $response = false;
+        $data = array();
+
+        $result = array();
+
+        foreach ($result as $row) {
+            list($key, $value) = explode('=', $row);
+            $data[$key] = $value;
+        }
+
+        $this->setTransactionId($data['p2'])
+            ->setAmount($data['p4'])
+            ->setCurrency('ZAR')
+            ->setGatewayPaymentStatus($data['TransactionAccepted'])
+            ->setGatewayTransactionCode('TXN');
+
+        if ($data['TransactionAccepted'] == 'true') {
+            $response = true;
+        }
+
+        return $response;
+    }
+
+    /**
+     * @param $params
+     * @param $api_key
+     *
+     * @return string
+     */
+    private function _sign($params, $api_key)
+    {
+        $flattened_params = $this->_flattenParams($params);
+        ksort($flattened_params);
+        $base = implode(" ", $flattened_params);
+
+        return hash_hmac("sha256", $base, $api_key);
+    }
+
+    /**
+     * @param       $obj
+     * @param array $result
+     * @param array $path
+     *
+     * @return array
+     */
+    private function _flattenParams($obj, $result = array(), $path = array())
+    {
+        if (is_array($obj)) {
+            foreach ($obj as $k => $v) {
+                $result = array_merge($result, $this->_flattenParams($v, $result, array_merge($path, array($k))));
+            }
+        }
+        else {
+            $result[implode("", array_map(function ($p) {
+                return "[{$p}]";
+            }, $path))] = $obj;
+        }
+
+        return $result;
+    }
+
+}
+

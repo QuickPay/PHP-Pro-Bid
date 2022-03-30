@@ -1,0 +1,42 @@
+<?php
+/**
+ * MOD:- QUICKPAY INTEGRATION
+ */
+$logo = $this->form->getGatewayLogo();
+$name = $this->form->getGatewayName();
+/** @var \Ppb\Model\PaymentGateway\QuickPay $gateway */
+$gateway = $this->form->getGateway();
+$errorMessage = $gateway->getErrorMessage();
+$paymentLink = $gateway->getPaymentLink();
+
+$displayButton = !empty($paymentLink) && empty($errorMessage);
+?>
+
+<div class="media mb-3 payment-box">
+    <?php if ($logo !== null) { ?>
+        <img src="<?php echo $this->baseUrl . $logo; ?>" alt="<?php echo $name; ?>"
+             class="d-none d-md-block payment-logo">
+    <?php } ?>
+
+    <div class="media-body">
+        <div class="d-md-flex justify-content-between">
+            <div class="mx-md-3 pb-3 pb-md-0">
+                <?php echo $this->form->getGatewayDescription(); ?>
+
+                <?php if (!$displayButton) { ?>
+                    <div class="mt-3 alert alert-danger">
+                        <?php echo sprintf($this->_('Error generating the payment link: %s'), $errorMessage); ?>
+                    </div>
+                <?php } ?>
+            </div>
+            <div>
+                <?php if ($displayButton) { ?>
+<!--                    <a class="btn btn-lg btn-primary jq-popup-form" href="--><?php //echo $paymentLink; ?><!--">--><?php //echo $this->_('Make Payment'); ?><!--</a>-->
+                    <a class="btn btn-lg btn-primary" href="<?php echo $paymentLink; ?>"><?php echo $this->_('Make Payment'); ?></a>
+                <?php } ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+

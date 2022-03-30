@@ -1,0 +1,38 @@
+<?php
+/**
+ * MOD:- ADVANCED CUSTOM FIELDS
+ */
+
+/** @var \Ppb\Db\Table\Row\Listing $listing */
+/** @var int|null $displayBoxId */
+
+$customFields = $listing->getCustomFields();
+?>
+
+<dl>
+    <?php foreach ($customFields as $field) {
+        if (($field['details_box_id'] == $displayBoxId) || ($displayBoxId === null)) {
+            $fieldDisplay = $this->fieldDisplay($field['display'], null, '-');
+            if ($fieldDisplay != '-') {
+                ?>
+                <dt><?php echo $this->_($field['label']); ?></dt>
+                <dd>
+                    <?php
+    
+                    $customFieldElement = $this->formElement($field['element'], $field['id']);
+                    if ($customFieldElement instanceof Ppb\Form\Element\Image) {
+                        echo ($fieldDisplay != '-') ? $this->thumbnail($fieldDisplay, 800) : $fieldDisplay;
+                    }
+                    else if ($customFieldElement instanceof Ppb\Form\Element\Media) {
+                        echo ($fieldDisplay != '-') ? $this->videoPlayer($fieldDisplay) : $fieldDisplay;
+                    }
+                    else {
+                        echo $fieldDisplay;
+                    }
+                    ?>
+                </dd>
+                <?php
+            }
+        }
+    } ?>
+</dl>
