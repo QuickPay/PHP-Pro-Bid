@@ -8,7 +8,7 @@ Tutorial for installing Quickpay payment gateway in PHP Pro bid installation
       • Access your database through PhpMyAdmin or another MySQL tool (PhpMyAdmin is typically available in your webhost control panel).
       • Open the file /SQL/mod.quickpay.sql and alter the ppb_ prefix so that it matches the prefix in your installation.
       • Run both sql queries on your database.
-      • The Quickpay gateway is now available in the admin part of PHP Pro bid
+      • The Quickpay gateway is now available in the admin part of PHP Pro bid. You will have to enter Quickpay Merchant ID, Quickpay Merchant Private Key and Quickpay API Key
 
 Do you need help with the installationen, then feel free to contact https://ableit.dk
 
@@ -23,7 +23,7 @@ Vejledning til installation af Quickpay betalingsgateway i PHP Pro bid
       • Tilgå din database ved at anvende PhpMyAdmin eller et andet MySQL værktøj (PhpMyAdmin er typisk tilgængelig i kontrolpanelet hos din webudbyder).
       • Åben filen /SQL/mod.quickpay.sql og ret tabelpræfikset ppb_ til det samme som for din installation.
       • Kør nu begge sql forespørgsler på din database.
-      • Quickpay gatewayen er nu tilgængelig i admin af PHP Pro bid
+      • Quickpay gatewayen er nu tilgængelig i admin af PHP Pro bid. Du skal angive Quickpay Merchant ID, Quickpay Merchant Private Key og Quickpay API Key
 
 
 Har du brug for hjælp til installationen, så kan du kontakte https://ableit.dk
